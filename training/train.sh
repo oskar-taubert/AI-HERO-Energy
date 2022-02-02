@@ -7,10 +7,11 @@
 #SBATCH --ntasks=1
 #SBATCH --time=01:00:00
 #SBATCH --output=./baseline_training.txt
+#SBATCH --reservation=ai_hero
 
 export CUDA_CACHE_DISABLE=1
 
-group_name=energy_challenge
+group_name=E2
 group_workspace=/hkfs/work/workspace/scratch/bh6321-${group_name}
 data_dir=/hkfs/work/workspace/scratch/bh6321-energy_challenge/data
 
