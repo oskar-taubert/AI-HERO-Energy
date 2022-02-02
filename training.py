@@ -22,9 +22,11 @@ def main():
     parser.add_argument("--forecast_horizon", type=int, default=forecast_days*24, help="forecast time steps in hours")
     parser.add_argument("--hidden_size", type=int, default=48, help="size of the internal state")
     parser.add_argument("--decoder_hidden_size", type=int, default=48, help="size of the internal state")
+    parser.add_argument("--encoder_depth", type=int, default=2, help="size of the internal state")
+    parser.add_argument("--decoder_depth", type=int, default=2, help="size of the internal state")
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--encoder_ckpt", type=str, default='./energy_baseline.pt')
+    parser.add_argument("--naive_file", type=str, default='seasonal_delta.pt')
 
     args = parser.parse_args()
 
@@ -53,6 +55,8 @@ def main():
     # Configuring Model
     hidden_nodes = args.hidden_size
     decoder_hidden_nodes = args.decoder_hidden_size
+    encoder_depth = args.encoder_depth
+    decoder_depth = args.decoder_depth
     input_size = 1
     output_size = 1
 
@@ -61,14 +65,14 @@ def main():
         # NOTE persistence model
         naive_params = torch.tensor([0.], dtype=torch.float)
     else:
-        naive_params = torch.load(naive_file)
+        # TODO adapt to improved naive model
+        naive_params  = torch.load(naive_file)
 
     num_epochs = args.num_epochs
     learning_rate = args.learning_rate
     naive_model = NaiveModel(naive_params)
-    encoder = LoadForecaster(input_size, hidden_nodes, output_size, use_finaldense=False)
-    encoder.load_state_dict(torch.load(args.encoder_ckpt))
-    decoder = LoadForecaster(input_size, decoder_hidden_nodes, output_size, use_finaldense=True)
+    encoder = LoadForecaster(input_size, hidden_nodes, output_size, num_layer=encoder_depth, use_finaldense=True)
+    decoder = LoadForecaster(input_size, decoder_hidden_nodes, output_size, num_layer=decoder_depth, use_finaldense=True)
     model = SophisticatedModel(naive_model, encoder=encoder)
 
     criterion = nn.MSELoss()
