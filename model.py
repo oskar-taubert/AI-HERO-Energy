@@ -29,24 +29,25 @@ class LoadForecaster(nn.Module):
 
 
 class NaiveModel(nn.Module):
-    def __init__(self, seasonal_bias=torch.tensor([0.], dtype=torch.float()), device=None):
+    def __init__(self, seasonal_delta=torch.tensor([0.], dtype=torch.float()), device=None):
         self.device = device
-        # NOTE seasonal_bias: 0.
-        # NOTE seasonal_bias: tensor of shape [53]
-        # NOTE seasonal_bias: tensor of shape [53, 24]
-        # NOTE seasonal_bias: tensor of shape [53, 7, 24]
-        if len(seasonal_bias.size()) == 1:
-            if seasonal_bias.size(0) == 1:
-                seasonal_bias.expand(53)
-            seasonal_bias.unsqueeze(-1)
-            seasonal_bias.expand(53, 24)
-        if len(seasonal_bias.size()) == 2:
-            seasonal_bias.unsqueeze(-2)
-            seasonal_bias.expand(53, 7, 24)
-        if len(seasonal_bias.size()) != 3:
+        # NOTE seasonal_delta: 0.
+        # NOTE seasonal_delta: tensor of shape [53]
+        # NOTE seasonal_delta: tensor of shape [53, 24]
+        # NOTE seasonal_delta: tensor of shape [53, 7, 24]
+        if len(seasonal_delta.size()) == 1:
+            if seasonal_delta.size(0) == 1:
+                seasonal_delta.expand(53)
+            assert seasonal_delta.size(0) == 53
+            seasonal_delta.unsqueeze(-1)
+            seasonal_delta.expand(53, 24)
+        if len(seasonal_delta.size()) == 2:
+            seasonal_delta.unsqueeze(-2)
+            seasonal_delta.expand(53, 7, 24)
+        if len(seasonal_delta.size()) != 3:
             raise ValueError()
 
-        self.seasonal_bias = Parameter(torch.tensor(seasonal_bias), device=device)
+        self.seasonal_delta = Parameter(torch.tensor(seasonal_delta), device=device)
         # self.holidays = holidays.CountryHoliday('DE', prov=None, state='NI')
         # self.cosmic_bias = torch.empty((24), dtype=torch.float)
         # self.cosmic_gradient = torch.empty((24), dtype=torch.float)
@@ -61,7 +62,7 @@ class NaiveModel(nn.Module):
         # days  = [d[2] for d in isods]
         # holidays = [[int(m in self.holidays) for m in l] for l in metadata]
 
-        out = torch.tensor([self.seasonal_bias[w] for w in weeks], dtype=torch.float, device=loaddata.device)
+        out = torch.tensor([self.seasonal_delta[w] for w in weeks], dtype=torch.float, device=loaddata.device)
 
         # NOTE returns torch.Tensor of shape [batch_size, 7 * 24, 1]
         return out
