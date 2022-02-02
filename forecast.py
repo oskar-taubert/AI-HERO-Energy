@@ -6,7 +6,10 @@ from pandas import DataFrame
 from dataset import CustomLoadDataset
 
 # TODO: import your model
-from model import LoadForecaster as SubmittedModel
+# from model import LoadForecaster as SubmittedModel
+from model import LoadForecaster
+from model import SophisticatedModel as SubmittedModel
+from model import NaiveModel
 
 
 def forecast(forecast_model, forecast_set, device):
@@ -43,8 +46,10 @@ if __name__ == '__main__':
 
     # load model with pretrained weights
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # TODO: adjust arguments according to your model
-    model = SubmittedModel(input_size=1, hidden_size=48, output_size=1, num_layer=1, device=device)
+    encoder = LoadForecaster(input_size=1, hidden_size=48, output_size=1, num_layer=1, device=device)
+    decoder = LoadForecaster(input_size=1, hidden_size=48, output_size=1, num_layer=1, device=device)
+    naive_model = NaiveModel()
+    model = SophisticatedModel(naive_model, encoder, decoder)
     model.load_state_dict(torch.load(weights_path, map_location=device))
     model.eval()
 
@@ -52,7 +57,7 @@ if __name__ == '__main__':
     test_file = os.path.join(data_dir, 'test.csv')
     valid_file = os.path.join(data_dir, 'valid.csv')
     data_file = test_file if os.path.exists(test_file) else valid_file
-    testset = CustomLoadDataset(data_file, 7*24, 7*24, device=device)
+    testset = CustomLoadDataset(data_file, 7*24, 7*24, device=device, metadata=True)
 
     # run inference
     normalized_forecasts = forecast(model, testset, device)
