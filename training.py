@@ -40,10 +40,10 @@ def main():
         data_dir = os.environ['AIHERO_PATH']
     train_set = CustomLoadDataset(
         os.path.join(data_dir, 'train.csv'),
-        historic_window, forecast_horizon, device)
+        historic_window, forecast_horizon, device, metadata=True)
     valid_set = CustomLoadDataset(
         os.path.join(data_dir, 'valid.csv'),
-        historic_window, forecast_horizon, device)
+        historic_window, forecast_horizon, device, metadata=True)
 
     # Create DataLoaders
     batch_size = args.batch_size
