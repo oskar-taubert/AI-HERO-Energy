@@ -67,7 +67,6 @@ class NaiveModel(nn.Module, seasonal_bias):
         return out
 
 
-# TODO correct batch collation
 class SophisticatedModel(LightningModule):
 
     def __init__(self, naive_model, encoder, decoder, train_encoder=False):
