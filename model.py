@@ -61,7 +61,7 @@ class NaiveModel(nn.Module):
         # days  = [d[2] for d in isods]
         # holidays = [[int(m in self.holidays) for m in l] for l in metadata]
 
-        out = torch.tensor([self.seasonal_bias[w] for w in weeks], dtype=torch.float)
+        out = torch.tensor([self.seasonal_bias[w] for w in weeks], dtype=torch.float, device=loaddata.device)
 
         # NOTE returns torch.Tensor of shape [batch_size, 7 * 24, 1]
         return out
