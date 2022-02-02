@@ -28,7 +28,7 @@ class LoadForecaster(nn.Module):
         return hidden_state, cell_state
 
 
-class NaiveModel(nn.Module, seasonal_bias):
+class NaiveModel(nn.Module):
     def __init__(self, seasonal_bias=torch.tensor([0.], dtype=torch.float()), device=None):
         self.device = device
         # NOTE seasonal_bias: 0.
