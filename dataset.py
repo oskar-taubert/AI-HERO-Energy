@@ -12,10 +12,25 @@ class CustomLoadDataset(Dataset):
 
         # Load Data from csv to Pandas Dataframe
         raw_data = pd.read_csv(data_file, delimiter=',')
-        load_data = raw_data['Load [MWh]'].to_numpy()
-        self.dataset = torch.Tensor(load_data)
+
+        # Group data by city
+        groups = raw_data.groupby('City')
+        cities = []
+        for city, df in groups['Load [MWh]']:
+            cities.append(torch.tensor(df.to_numpy(), dtype=torch.float))
+
+        # Generate data tensor and metadata
+        self.dataset = torch.stack(cities)
+
         if self.metadata:
-            self.metadata = raw_data['Time [s]']
+            cities = []
+            for city, df in groups['Time [s]']:
+                cities.append(torch.tensor(df.to_numpy(), dtype=torch.float))
+
+            self.metadataset = torch.stack(cities)
+
+        self.city_nr = self.dataset.shape[0]
+        self.samples_per_city = self.dataset.shape[1] - self.historic_window - self.forecast_horizon
 
         # Normalize Data to [0,1]
         if normalize is True:
@@ -26,14 +41,17 @@ class CustomLoadDataset(Dataset):
         self.dataset = self.dataset.to(device)
 
     def __len__(self):
-        return int(self.dataset.shape[0] - self.historic_window - self.forecast_horizon)
+        return self.city_nr * self.samples_per_city
 
     def __getitem__(self, idx):
         # translate idx (day nr) to array index
-        x = self.dataset[idx:idx+self.historic_window].unsqueeze(dim=1)
+        city_idx = idx // self.samples_per_city
+        hour_idx = idx % self.samples_per_city
+        x = self.dataset[city_idx, hour_idx:hour_idx+self.historic_window].unsqueeze(dim=1)
         if self.metadata:
-            x = (x, self.metadata.iloc[idx:idx+self.historic_window])
-        y = self.dataset[idx+self.historic_window: idx+self.historic_window + self.forecast_horizon].unsqueeze(dim=1)
+            x = (x, metadataset[city_idx, hour_idx:hour_idx+self.historic_window])
+        y = self.dataset[city_idx, hour_idx+self.historic_window:
+                                   hour_idx+self.historic_window + self.forecast_horizon].unsqueeze(dim=1)
 
         return x, y
 
