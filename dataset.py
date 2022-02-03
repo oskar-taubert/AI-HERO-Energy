@@ -25,9 +25,11 @@ class CustomLoadDataset(Dataset):
         if self.metadata:
             cities = []
             for city, df in groups['Time [s]']:
-                cities.append(torch.tensor(df.to_numpy(), dtype=torch.float))
+                cities.append(df.to_list())
+                #  cities.append(torch.tensor(df.to_numpy(), dtype=torch.float))
 
-            self.metadataset = torch.stack(cities)
+            # self.metadataset = torch.stack(cities)
+            self.metadataset = cities
 
         self.city_nr = self.dataset.shape[0]
         self.samples_per_city = self.dataset.shape[1] - self.historic_window - self.forecast_horizon
@@ -49,7 +51,7 @@ class CustomLoadDataset(Dataset):
         hour_idx = idx % self.samples_per_city
         x = self.dataset[city_idx, hour_idx:hour_idx+self.historic_window].unsqueeze(dim=1)
         if self.metadata:
-            x = (x, metadataset[city_idx, hour_idx:hour_idx+self.historic_window])
+            x = (x, self.metadataset[city_idx][hour_idx:hour_idx+self.historic_window])
         y = self.dataset[city_idx, hour_idx+self.historic_window:
                                    hour_idx+self.historic_window + self.forecast_horizon].unsqueeze(dim=1)
 

@@ -11,20 +11,27 @@ from model import LoadForecaster
 from model import SophisticatedModel as SubmittedModel
 from model import NaiveModel
 
+def collate_fn(batch):
+    transposed = list(zip(*batch))
+    xs, ys = transposed
+    ys = torch.stack(ys)
+    data, metadata = list(zip(*xs))
+    xs = (torch.stack(data), [d for d in metadata])
+    return xs, ys
 
 def forecast(forecast_model, forecast_set, device):
     forecast_model.to(device)
     forecast_model.eval()
 
     batch_size = 64
-    forecast_loader = DataLoader(forecast_set, batch_size=64, shuffle=False)
+    forecast_loader = DataLoader(forecast_set, batch_size=64, shuffle=False, collate_fn=collate_fn)
     forecasts = torch.zeros([len(forecast_set), 7*24], device=device)
     for n, (input_seq, _) in enumerate(forecast_loader):
         # TODO: adjust forecast loop according to your model
         with torch.no_grad():
-            actual_batch_size = len(input_seq)  # last batch has different size
-            hidden = forecast_model.init_hidden(actual_batch_size)
-            prediction, hidden = forecast_model(input_seq, hidden)
+
+            actual_batch_size = len(input_seq[0])  # last batch has different size
+            prediction = forecast_model(input_seq)
             forecasts[n * batch_size:n * batch_size + actual_batch_size] = prediction.squeeze(dim=-1)
     return forecasts
 
@@ -32,7 +39,7 @@ def forecast(forecast_model, forecast_set, device):
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--weights_path", type=str,
-                        default='/hkfs/work/workspace/scratch/bh6321-energy_challenge/AI-HERO/energy_baseline.pt',
+                        default='/hkfs/work/workspace/scratch/bh6321-E2/AI-HERO-Energy/lightning_logs/version_1569730/checkpoints/....',
                         help="Model weights path")  # TODO: adapt to your model weights path
     parser.add_argument("--save_dir", type=str, help='Directory where weights and results are saved', default='.')
     parser.add_argument("--data_dir", type=str, help='Directory containing the data you want to predict',
@@ -46,11 +53,11 @@ if __name__ == '__main__':
 
     # load model with pretrained weights
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    encoder = LoadForecaster(input_size=1, hidden_size=48, output_size=1, num_layer=1, device=device)
-    decoder = LoadForecaster(input_size=1, hidden_size=48, output_size=1, num_layer=1, device=device)
+    encoder = LoadForecaster(input_size=1, hidden_size=48, output_size=1, num_layer=2, device=device)
+    decoder = LoadForecaster(input_size=1, hidden_size=48, output_size=1, num_layer=2, device=device)
     naive_model = NaiveModel()
-    model = SophisticatedModel(naive_model, encoder, decoder)
-    model.load_state_dict(torch.load(weights_path, map_location=device))
+    model = SubmittedModel(naive_model, encoder, decoder)
+    model.load_state_dict(torch.load(weights_path, map_location=torch.device('cpu'))['state_dict'])
     model.eval()
 
     # dataloader
